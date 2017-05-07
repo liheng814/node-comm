@@ -13,11 +13,36 @@ class Comm extends EventEmitter {
     constructor( config = {} ) {
         super();
         this.config = config;
+        
+        // isCommReady is a flag of Comm ready to open.
+        this.isCommReady = false;
 
-        // isCommOpen is a flag of Comm status.
+        // isCommOpen is a flag of Comm open status.
         this.isCommOpen = false;
     }
 
+    /**
+     * Comm ready status.
+     * @param {Boolean} isReady If comm ready.
+     */
+    setReady(isReady) {
+        this.isCommReady = isReady;
+    }
+    /**
+     * Comm ready status.
+     * @return {Boolean} If comm ready.
+     */
+    isReady() {
+        return this.isCommReady;
+    }
+
+    /**
+     * Comm opem status.
+     * @param {Boolean} isOpen If comm open.
+     */
+    setOpen(isOpen) {
+        this.isCommOpen = isOpen;
+    }
     /**
      * Comm open status.
      * @return {Boolean} If comm open.
@@ -27,13 +52,17 @@ class Comm extends EventEmitter {
     }
 
     /**
+     * Set current comm object.
+     * @param {Object} comm Comm Object.
+     */
+    setCommExecObj(comm) {
+        this.commExecObj = comm;
+    }
+    /**
      * Get current comm object.
      * @return {Object} Comm Object.
      */
-    getCurrentCommObj() {
-        // Check if Comm open.
-        if( !this.isCommOpen ) throw new Error("Comm not open yet.");
-
+    getCommExecObj() {
         return this.commExecObj;
     }
 

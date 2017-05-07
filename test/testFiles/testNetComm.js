@@ -9,7 +9,11 @@ const NetComm = require(path.join("..", "src", "NetComm.js"));
 // Start an echo server
 const server = net.createServer((c) => {
     c.on("data", function(data) {
-        c.write(data);
+        if(data.toString() === "closeMe") {
+            c.close();
+        } else {
+            c.write(data);
+        }
     });
 });
 server.on('error', (err) => {
@@ -28,7 +32,7 @@ describe("NetComm", function() {
     var netComm = new NetComm(config);
 
     it("should catch comm-on-connect event", function(done) {
-        netComm.on("comm-on-connect", function() {
+        netComm.once("comm-on-connect", function() {
             done();
         });
         netComm.open();
@@ -39,11 +43,11 @@ describe("NetComm", function() {
     });
 
     it("should catch comm-on-data event", function(done) {
-        netComm.on("comm-on-data", function(data) {
+        netComm.once("comm-on-data", function(data) {
             assert.equal(data, "Hello World!");
             done();
         });
-        netComm.on("comm-on-data-error", function(err) {
+        netComm.once("comm-on-data-error", function(err) {
             done(err);
         });
         netComm.write("Hello World!");
@@ -51,13 +55,16 @@ describe("NetComm", function() {
     });
 
     it("should catch comm-on-disconnect event", function(done) {
-        netComm.on("comm-on-disconnect", function() {
+        netComm.once("comm-on-disconnect", function() {
             done();
         });
         netComm.close();
+        server.close();
     });
 
     it("isCommOpen should be false", function() {
         assert.equal(false, netComm.isOpen());
     });
+
+    
 });

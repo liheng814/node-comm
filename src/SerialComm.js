@@ -30,45 +30,44 @@ class SerialComm extends Comm {
         if( !this.config.portName ) throw new Error("SerialComm: portName is neccessary.");
 
         // Check if Comm open.
-        if( this.isCommOpen ) throw new Error("SerialComm has been open.");
+        if( this.isOpen() ) return;
 
         var serialPort = new SerialPort(this.config.portName, this.config.portConfig);
 
-        const clientSocket = net.connect(this.config, () => {
-            // Connected
-            this.emit("comm-on-connect", data.toString());
-        });
-        serialPort.on('open', (data) => {
+        serialPort.on("open", (data) => {
             this.emit("comm-on-connect");
-            this.isCommOpen = true;
+            this.setOpen(true);
             console.log("SerialComm: Connected to " + this.config.portName);
         });
-        serialPort.on('data', (data) => {
+        serialPort.on("data", (data) => {
             this.emit("comm-on-data", data.toString());
         });
-        serialPort.on('disconnect', () => {
+        serialPort.on("disconnect", () => {
             this.emit("comm-on-disconnect");
-            this.isCommOpen = false;
+            this.setOpen(false);
             console.log("SerialComm: Disconnected to " + this.config.portName);
+        });
+        serialPort.on("error", (err) => {
+            this.emit("comm-on-error", err);
         });
 
         // Put socket into Class property.
-        this.commExecObj = serialPort;
+        this.setCommExecObj(serialPort);
     }
 
     close() {
         // Check if Comm close.
-        if( !this.isCommOpen ) throw new Error("SerialComm has been close or not open yet.");
+        if( !this.isOpen() ) return;
 
-        this.commExecObj.close();
-        this.isCommOpen = false;
+        this.getCommExecObj().close();
+        this.setOpen(false);
     }
 
     write( data, isSync = false ) {
         // Check if Comm close.
-        if( !this.isCommOpen ) throw new Error("SerialComm closed now, open() before write data out.");
+        if( !this.isOpen() ) throw new Error("SerialComm closed now, open() before write data out.");
 
-        this.commExecObj.write(data);
+        this.getCommExecObj().write(data);
     }
 }
 
