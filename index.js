@@ -13,7 +13,7 @@ class CommBuilder {
      * Constructor with nothing.
      */
     constructor() {
-        super();
+        return this;
     }
 
     /**
