@@ -4,11 +4,13 @@ const net = require('net');
 const Comm = require("./Comm.js");
 
 // @ref https://nodejs.org/api/net.html#net_socket_connect_options_connectlistener
-let config = {
-    host: "localhost",
-    port: 50001,
-    family: 4   // IPv4 | IPv6
-};
+// let config = {
+//     type: "client",
+//     host: "localhost",
+//     port: 50001,
+//     family: 4,  // IPv4 | IPv6
+//     isContinuous: false
+// };
 
 /**
  * Socket Communication Class. Raise an event when receiving data.

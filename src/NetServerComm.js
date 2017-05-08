@@ -5,6 +5,7 @@ const Comm = require("./Comm.js");
 
 // @ref https://nodejs.org/api/net.html#net_socket_connect_options_connectlistener
 let config = {
+    type: "server",
     host: "localhost",
     port: 50001
 };
