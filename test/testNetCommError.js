@@ -6,6 +6,13 @@ const assert = require('assert');
 
 const NetComm = require(path.join("..", "src", "NetComm.js"));
 
+let config = {
+    host: "localhost",
+    port: 50002,
+    family: 4   // IPv4 | IPv6
+};
+
+
 // Start an echo server
 const server = net.createServer((c) => {
     c.on("data", function(data) {
@@ -20,14 +27,8 @@ server.on('error', (err) => {
     console.error(err);
     throw err;
 });
-server.listen(50001, () => {});
+server.listen(50002, () => {});
 // End echo server
-
-let config = {
-    host: "localhost",
-    port: 50001,
-    family: 4   // IPv4 | IPv6
-};
 
 describe("NetComm Error", function() {
     var netComm2 = new NetComm(config);
@@ -52,15 +53,6 @@ describe("NetComm Error", function() {
         netComm2.write("closeMe");
     });
 
-
-    it("should catch comm-on-error event", function(done) {
-        netComm2.once("comm-on-error", function(err) {
-            console.error(err);
-            assert.equal(err.code, "ECONNREFUSED");
-            done();
-        });
-        netComm2.open();
-    });
 
     it("isCommOpen should be false", function() {
         assert.equal(false, netComm2.isOpen());

@@ -37,15 +37,13 @@ class SerialComm extends Comm {
         serialPort.on("open", (data) => {
             this.emit("comm-on-connect");
             this.setOpen(true);
-            console.log("SerialComm: Connected to " + this.config.portName);
         });
         serialPort.on("data", (data) => {
             this.emit("comm-on-data", data.toString());
         });
-        serialPort.on("disconnect", () => {
+        serialPort.on("close", () => {
             this.emit("comm-on-disconnect");
             this.setOpen(false);
-            console.log("SerialComm: Disconnected to " + this.config.portName);
         });
         serialPort.on("error", (err) => {
             this.emit("comm-on-error", err);
@@ -60,7 +58,6 @@ class SerialComm extends Comm {
         if( !this.isOpen() ) return;
 
         this.getCommExecObj().close();
-        this.setOpen(false);
     }
 
     write( data, isSync = false ) {

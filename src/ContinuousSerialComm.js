@@ -1,7 +1,7 @@
 /* jshint esversion: 6 */
-const NetComm = require("./NetComm.js");
+const SerialComm = require("./SerialComm.js");
 
-class ContinuousNetComm extends NetComm {
+class ContinuousSerialComm extends SerialComm {
     constructor( config = {} ) {
         super();
         this.config = config;
@@ -17,4 +17,4 @@ class ContinuousNetComm extends NetComm {
         });
     }
 }
-module.exports = ContinuousNetComm;
+module.exports = ContinuousSerialComm;

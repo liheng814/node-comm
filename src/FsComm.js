@@ -11,47 +11,67 @@ const Comm = require("./Comm.js");
 //     failedPath: "./bad/",
 //     encodeing: "UTF-8",
 //     isPolling: false,
-//     pollingInterval: 60     // second
+//     pollingInterval: 60000     // milli-second
 // };
 
-let processFile = function(_config, _emitter, _filename) {
-    let _fullPathName = path.join(_config.targetPath, _filename);
+let onFileChange = function(_filename, _comm) {
+    let _fullPathName = path.join(_comm.config.targetPath, _filename);
 
-    fs.readFile(_fullPathName, _config.encoding, function(_err, _data) {
-        // Processing
-        let _destPath;
+    // check file exists, check file or directory
+    fs.stat(_fullPathName, function(_err, _stat) {
         if( _err ) {
-            _emitter.emit("comm-on-data-error", _err);
-            _destPath = path.join(_config.failedPath, _filename);
-        } else {
-            _emitter.emit("comm-on-data", _data);
-            _destPath = path.join(_config.successPath, _filename);
+            // File deleted
+            return;
         }
 
-        // Finalize
-        if(_config.finalizeFile === "move") {
-            fs.rename(_fullPathName, _destPath, function(_errExc) {
-                if( _errExc ) {
-                    console.error(_errExc);
-                    _emitter.emit("comm-on-error", _err);
-                }
-            });
-        } else {
-            fs.unlink(_fullPathName, function(_errExc) {
-                console.error(_errExc);
-            });
+        if( !_stat.isFile() ) {
+            // Not file
+            return;
         }
+
+        fs.readFile(_fullPathName, _comm.config.encoding, function(_err, _data) {
+            // Processing
+            if( _err ) {
+                _comm.emit("comm-on-data-error", _err);
+            } else {
+                _comm.emit("comm-on-data", _data);
+            }
+            let _destPath = path.join( (_err) ? _comm.config.failedPath : _comm.config.successPath, _filename);
+
+            // Finalize
+            if(_comm.config.finalizeFile === "move") {
+                fs.rename(_fullPathName, _destPath, function(_errExc) {
+                    if( _errExc ) _comm.emit("comm-on-error", _err);
+                });
+            } else {
+                fs.unlink(_fullPathName, function(_errExc) {
+                    if( _errExc ) _comm.emit("comm-on-error", _err);
+                });
+            }
+        });
+
     });
+
 };
 
-let scanFolder = function(_config, _emitter) {
-    fs.readdir(_config.targetPath, function(_err, _files) {
+let filenameTmp = {};
+let fsWatcherEventHandler = function(_event, _filename, _comm) {
+    if( _event === "change" ) {
+        if( filenameTmp[_filename] ) {
+            clearTimeout(filenameTmp[_filename]);
+        }
+
+        filenameTmp[_filename] = setTimeout(onFileChange, 500, _filename, _comm);
+    }
+};
+
+let scanFolder = function(_comm) {
+    fs.readdir(_comm.config.targetPath, function(_err, _files) {
         if(_err) {
-            console.error(_err);
-            _emitter.emit("comm-on-error", _err);
+            _comm.emit("comm-on-error", _err);
         } else {
             for(var i in _files) {
-                processFile(_config, _emitter, _files[i]);
+                onFileChange(_files[i], _comm);
             }
         }
     });
@@ -79,34 +99,39 @@ class FsComm extends Comm {
             throw new Error("FsComm: successPath and failedPath are neccessary when finalizeFile = 'move'.");
         
         // Check if Comm open.
-        if( this.isCommOpen ) throw new Error("FsComm has been open.");
+        if( this.isOpen() ) throw new Error("FsComm has been open.");
+
+        // Default config value
+        this.config.pollingInterval = this.config.pollingInterval | 60000;
+        this.config.finalizeFile = this.config.finalizeFile | "delete";
+        this.config.encoding = this.config.encoding | "UTF-8";
 
         // Open
+        var execObj;
         if(this.config.isPolling) {
-            this.commExecObj = setInterval(scanFolder, this.config.pollingInterval * 1000, this.config, this);
+            execObj = setInterval(scanFolder, this.config.pollingInterval, this)
         } else {
-            this.commExecObj = fs.watch(this.config.targetPath, {encoding: this.config.encoding}, (_eventType, _filename) => {
-                if (_filename) {
-                    processFile(this.config, this, _filename);
-                }
+            execObj = fs.watch(this.config.targetPath, {encoding: this.config.encoding}, (_event, _filename) => {
+                fsWatcherEventHandler(_event, _filename, this);
             });
         }
+        this.setCommExecObj(execObj);
 
-        this.isCommOpen = true;
+        this.setOpen(true);
         this.emit("comm-on-connect");
     }
 
     close() {
         // Check if Comm close.
-        if( !this.isCommOpen ) throw new Error("FsComm has been close or not open yet.");
+        if( !this.isOpen() ) return;
 
         if(this.config.isPolling) {
             clearInterval(this.commExecObj);
         } else {
-            this.commExecObj.close();
+            this.getCommExecObj().close();
         }
 
-        this.isCommOpen = false;
+        this.setOpen(false);
         this.emit("comm-on-disconnect");
     }
 
